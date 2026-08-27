@@ -259,7 +259,7 @@ bool ConnectClient(struct sockaddr_in data){
 
     struct pollfd pfd;
     pfd.fd = tempSocket;
-    pfd.events = POLLOUT;
+    pfd.events = POLLOUT | POLLERR;
 
     int res = connect(tempSocket, (struct sockaddr*)&data, sizeof(data));
     if(res < 0){
