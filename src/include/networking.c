@@ -257,6 +257,19 @@ bool ConnectClient(struct sockaddr_in data){
     int tempSocket = socket(AF_INET, SOCK_STREAM, 0);
     if(tempSocket < 0){return false;}
 
+    int flags = fcntl(tempSocket, F_GETFL, 0);
+    if(flags == -1){
+        LogMessage("Socket nonblock failed (1)");
+        close(tempSocket);
+        return;
+    }
+
+    if(fcntl(tempSocket, F_SETFL, flags | O_NONBLOCK) == -1){
+        LogMessage("Socket nonblock failed (2)");
+        close(tempSocket);
+        return;
+    }
+
     struct pollfd pfd;
     pfd.fd = tempSocket;
     pfd.events = POLLOUT | POLLERR;
