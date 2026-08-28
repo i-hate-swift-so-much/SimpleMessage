@@ -6,7 +6,7 @@ VER_MIN := 1
 BREW_PREFIX := $(shell brew --prefix)
 
 C = gcc
-CFLAGS = -Iinclude -I$(BREW_PREFIX)/include
+CFLAGS = -static -Iinclude -I$(BREW_PREFIX)/include
 LDFLAGS = -L$(BREW_PREFIX)/lib -lgmp
 SRC = src/main.c src/include/window.c src/include/input.c src/include/commands.c src/include/networking.c
 OUT = bin/simplemsg
