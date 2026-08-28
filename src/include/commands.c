@@ -22,6 +22,17 @@ int FirstSpace(char* str, int len){
     return 0;
 }
 
+void SetNickname(char* nick, size_t nickLen){
+    if(nickLen >= 32){
+        return;
+    }
+    int file = open("data/nickname.txt", O_WRONLY | O_TRUNC);
+    
+    write(file, nick, nickLen);
+    memcpy(nickname, nick, nickLen);
+    nicknameLength = nickLen;
+}
+
 void DumpContacts(){
     char* contactFile = "data/contacts.txt";
 
@@ -161,6 +172,13 @@ void ProcessCommand(){
             LogMessage(display);
         }else{
             LogMessage("Couldn't send message: NO ARG");
+        }
+    }else if(CompareStrings(blocks[0].shortBlock, blocks[0].bytes, "setnick", 7)){
+        char* nickIndex = blocks[1].block;
+        if(nickIndex != NULL){
+            SetNickname(nickIndex, inputBufferPos-blocks[1].bytes);
+        }else{
+            LogMessage("Couldn't set nickname: NO ARG");
         }
     }else{
         LogMessage("Invalid Command");

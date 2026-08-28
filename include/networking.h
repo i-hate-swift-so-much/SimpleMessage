@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <poll.h>
+#include <netdb.h>
 
 #include "window.h"
 

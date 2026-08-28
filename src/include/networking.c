@@ -7,8 +7,17 @@ bool connected = false;
 bool connectionOfficial = false;
 
 int port = 15253;
+int conPort = 0;
+
+char connectedIP[INET6_ADDRSTRLEN];
+char* noAddress = "NO CONNECTION";
+
+char connectedNickname[32];
+int connectedNickLen = 0;
 
 void InitNetwork(){
+    memcpy(connectedIP, noAddress, 14);
+
     connected = false;
     
     if(listenSocket > 0){
@@ -62,6 +71,38 @@ void InitNetwork(){
     }
 }
 
+void UpdateConnected(){
+    if(connected == true){
+        struct sockaddr_storage addr;
+        socklen_t len = sizeof(addr);
+
+        if(getpeername(connectionSocket, (struct sockaddr*)&addr, &len) == -1){
+            LogMessage("Couldn't get connection IP (1)");
+            memcpy(connectedIP, noAddress, 14);
+            return;
+        }
+
+        char ip_string[INET6_ADDRSTRLEN];
+
+        if(addr.ss_family == AF_INET){
+            struct sockaddr_in* in = (struct sockaddr_in*)&addr;
+            conPort = ntohs(in->sin_port);
+            inet_ntop(AF_INET, &in->sin_addr, ip_string, sizeof(ip_string));
+        }else if(addr.ss_family == AF_INET6){
+            struct sockaddr_in6* in = (struct sockaddr_in6*)&addr;
+            conPort = ntohs(in->sin6_port);
+            inet_ntop(AF_INET6, &in->sin6_addr, ip_string, sizeof(ip_string));
+        }else{
+            LogMessage("Couldn't get connection IP (2)");
+            memcpy(connectedIP, noAddress, 14);
+            return;
+        }
+        memcpy(connectedIP, ip_string, INET6_ADDRSTRLEN);
+    }else{
+        memcpy(connectedIP, noAddress, 14);
+    }
+}
+
 void CheckNewConnection(){
     if(connected){return;}
     struct sockaddr received;
@@ -88,7 +129,16 @@ void CheckNewConnection(){
 
     connected = true;
 
-    SendPacket(HANDSHAKE_PACKET, 0, 0);
+    UpdateConnected();
+    // payload layout
+    // uint32_t NameLength
+    // char nickname[32];
+    uint8_t* payload = (uint8_t*)malloc(4+nicknameLength);
+    memcpy(payload, &nicknameLength, 4);
+    memcpy(payload+4, nickname, nicknameLength);
+
+    SendPacket(HANDSHAKE_PACKET, 4+nicknameLength, payload);
+    free(payload);
 }
 
 void SerializePacket(struct Packet* packet){
@@ -118,11 +168,9 @@ void SendPacket(enum PACKET_TYPES type, uint32_t payload_length, void* payload){
     toSend->payload_length = payload_length;
     toSend->fullSize = sizeof(struct Packet) + payload_length;
 
-    memcpy((void*)toSend+sizeof(struct Packet), (void*)payload, payload_length);
+    memcpy((uint8_t*)toSend+sizeof(struct Packet), (void*)payload, payload_length);
 
     SerializePacket(toSend);
-
-    //LogMessage("Packet sent");
 
     send(connectionSocket, (void*)toSend, sizeof(struct Packet)+payload_length, 0);
     free(toSend);
@@ -140,10 +188,19 @@ void ProcessPacket(struct Packet* packet){
                 char* disconnectMSG = "Version mismatch";
 
                 SendPacket(DISCONNECT_PACKET, 16, disconnectMSG);
+                Disconnect();
                 break;
             }
+            memcpy(&connectedNickLen, packet->payload, 4);
+            memcpy(connectedNickname, (uint8_t*)(packet->payload+4), 32);
 
-            SendPacket(ACCEPT_PACKET, 0, 0);
+            // same payload as handshake
+            uint8_t* payload = (uint8_t*)malloc(4+nicknameLength);
+            memcpy(payload, &nicknameLength, 4);
+            memcpy(payload+4, nickname, nicknameLength);
+
+            SendPacket(ACCEPT_PACKET, 4+nicknameLength, payload);
+            free(payload);
             break;
         }
 
@@ -154,13 +211,17 @@ void ProcessPacket(struct Packet* packet){
 
         case ACCEPT_PACKET:{
             LogMessage("Connection accepted");
+            
+            memcpy(&connectedNickLen, packet->payload, 4);
+            memcpy(connectedNickname, (uint8_t*)(packet->payload+4), 32);
+
             connectionOfficial = true;
             break;
         }
 
         case MESSAGE_PACKET:{
             char display[128];
-            snprintf(display, 128, "Other: %s", packet->payload);
+            snprintf(display, 128, "%s: %s", connectedNickname, packet->payload);
             LogMessage(display);
             break;
         }
@@ -199,8 +260,6 @@ void CheckNewPackets(){
         Disconnect();
         return;
     }
-
-    //LogMessage("Received packet");
 
     uint32_t given_size;
     uint32_t total = 0;
@@ -246,6 +305,7 @@ void Disconnect(){
         connectionSocket = -1;
     }
 
+    memcpy(connectedIP, noAddress, 14);
     connected = false;
     connectionOfficial = false;
 
@@ -312,5 +372,6 @@ bool ConnectClient(struct sockaddr_in data){
     connected = true;
 
     connectionSocket = tempSocket;
+    UpdateConnected();
     return true;
 }

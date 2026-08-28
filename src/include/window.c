@@ -33,7 +33,7 @@ void WinRefresh(){
     }
 
     MoveCursor(0, 0);
-    printf("\033[Kv%i.%i | %i | %i", VER_MAJ, VER_MIN, inputBufferPos, port);
+    printf("\033[Kv%i.%i | %i | Connected to: %s:%i | %s | %i", VER_MAJ, VER_MIN, port, connectedIP, conPort, nickname, connectedNickLen);
 
     MoveCursor(0, height);
     printf("\033[K> %s", inputBuffer);

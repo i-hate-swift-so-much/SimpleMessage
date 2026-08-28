@@ -36,4 +36,5 @@ struct BlockDesignator{
     size_t bytes;
 };
 
+void SetNickname(char* nick, size_t nickLen);
 void ProcessCommand();

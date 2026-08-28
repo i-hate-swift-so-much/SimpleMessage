@@ -7,6 +7,8 @@
 #include "termios.h"
 #include "stdlib.h"
 #include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #include "input.h"
 
@@ -19,6 +21,14 @@
 #endif
 
 extern int port;
+
+extern char connectedIP[INET6_ADDRSTRLEN];
+extern int conPort;
+extern char nickname[32];
+extern int nicknameLength;
+
+extern char connectNickname[32];
+extern int connectedNickLen;
 
 void LogMessage(char* input);
 void WinRefresh();
