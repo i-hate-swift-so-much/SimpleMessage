@@ -38,6 +38,7 @@ void InitNetwork(){
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
+    //inet_pton(AF_INET, "192.168.0.123", &(addr.sin_addr.s_addr));
     addr.sin_port = htons(port);
 
     if (bind(listenSocket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
@@ -261,13 +262,13 @@ bool ConnectClient(struct sockaddr_in data){
     if(flags == -1){
         LogMessage("Socket nonblock failed (1)");
         close(tempSocket);
-        return;
+        return false;
     }
 
     if(fcntl(tempSocket, F_SETFL, flags | O_NONBLOCK) == -1){
         LogMessage("Socket nonblock failed (2)");
         close(tempSocket);
-        return;
+        return false;
     }
 
     struct pollfd pfd;
@@ -286,9 +287,13 @@ bool ConnectClient(struct sockaddr_in data){
 
     int poll_res = poll(&pfd, 1, 1000);
 
-    if(poll_res <= 0){
+    if(poll_res < 0){
         snprintf(reason, 64, "Connection failed (3) (%i)", errno);
         LogMessage(reason);
+        close(tempSocket);
+        return false;
+    }else if(poll_res == 0){
+        LogMessage("Connection timed out");
         close(tempSocket);
         return false;
     }
@@ -303,14 +308,6 @@ bool ConnectClient(struct sockaddr_in data){
     }
 
     LogMessage("Connected");
-
-    int flags = fcntl(tempSocket, F_GETFL, 0);
-    if (flags != -1) {
-        fcntl(tempSocket, F_SETFL, flags | O_NONBLOCK);
-    }else{
-        LogMessage("FCNTL fail");
-        return false;
-    }
 
     connected = true;
 
