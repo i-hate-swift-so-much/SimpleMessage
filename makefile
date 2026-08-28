@@ -6,9 +6,9 @@ VER_MIN := 1
 BREW_PREFIX := $(shell brew --prefix)
 
 C = gcc
-CFLAGS = -static -Iinclude -I$(BREW_PREFIX)/include
-LDFLAGS = -L$(BREW_PREFIX)/lib -lgmp
-SRC = src/main.c src/include/window.c src/include/input.c src/include/commands.c src/include/networking.c
+CFLAGS = -Iinclude -I$(BREW_PREFIX)/include
+LDFLAGS = -L$(BREW_PREFIX)/lib
+SRC = src/main.c src/include/window.c src/include/input.c src/include/commands.c src/include/networking.c /opt/homebrew/lib/libgmp.a
 OUT = bin/simplemsg
 
 all:
