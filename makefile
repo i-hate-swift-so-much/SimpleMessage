@@ -12,7 +12,7 @@ all:
 	clear
 	${MAKE} compile
 
-compile: SRC
+compile: ${SRC}
 	${C} ${CFLAGS} ${SRC} -o ${OUT} -DVER_MAJ=${VER_MAJ} -DVER_MIN=${VER_MIN}
 
 clear:
