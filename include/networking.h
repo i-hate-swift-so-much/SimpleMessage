@@ -39,7 +39,7 @@ enum PACKET_TYPES{
 
 struct Packet{
     uint32_t fullSize;
-    uint8_t magic[4]; // SMSG
+    uint8_t magic[4]; // Always equals "SMSG"
     uint8_t version_major;
     uint8_t version_minor;
     uint8_t type;
